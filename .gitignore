@@ -22,6 +22,10 @@ __pycache__/
 htmlcov/
 *.log
 
+# MS Office temporary lock files
+~$*
+*.tmp
+
 # System files
 Thumbs.db
 .DS_Store
