@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{% block title %}Analytics & Reports &bull; Sports Club DBMS{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="fw-bold mb-1">Club Intelligence & Reports</h2>
+        <p class="text-secondary mb-0">Dynamic reporting running directly on live MySQL 8 database views with instant CSV exports.</p>
+    </div>
+    <div>
+        <a href="{{ url_for('report_export_csv', report_key=active_key) }}" class="btn btn-success px-3 py-2 rounded-3 shadow-sm">
+            <i class="bi bi-file-earmark-spreadsheet me-1"></i> Export {{ current_meta.title }} as CSV
+        </a>
+    </div>
+</div>
+
+<!-- Report Navigation Tabs -->
+<div class="content-card p-2 mb-4">
+    <div class="nav nav-pills flex-column flex-md-row gap-1">
+        {% for key, val in views_dict.items() %}
+        <a class="nav-link px-3 py-2 rounded-2 {% if active_key == key %}active bg-primary text-white{% else %}text-secondary{% endif %}"
+           href="{{ url_for('reports_page', report=key) }}">
+            {{ val.title }}
+        </a>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Active Report Card & Table -->
+<div class="content-card">
+    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <div>
+            <div class="fw-bold fs-5 text-dark mb-1">{{ current_meta.title }}</div>
+            <div class="text-secondary small">{{ current_meta.desc }} &bull; Source View: <code>{{ current_meta.view }}</code></div>
+        </div>
+        <div>
+            <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2">
+                {{ rows|length }} Records Retrieved
+            </span>
+        </div>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-custom table-hover">
+            <thead>
+                <tr>
+                    {% for col in columns %}
+                    <th>{{ col.replace('_', ' ').upper() }}</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% if rows %}
+                    {% for row in rows %}
+                    <tr>
+                        {% for col in columns %}
+                        <td>
+                            {% set val = row[col] %}
+                            {% if val is none %}
+                                <span class="text-muted small">NULL</span>
+                            {% elif 'status' in col and val == 'Active' %}
+                                <span class="badge badge-active">{{ val }}</span>
+                            {% elif 'status' in col and val == 'Expired' %}
+                                <span class="badge badge-expired">{{ val }}</span>
+                            {% elif 'rank' in col %}
+                                <span class="badge bg-warning-subtle text-dark border">#{{ val }}</span>
+                            {% elif 'fee' in col or 'amount' in col %}
+                                &#8377;{{ val }}
+                            {% else %}
+                                {{ val }}
+                            {% endif %}
+                        </td>
+                        {% endfor %}
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="{{ columns|length or 1 }}" class="text-center py-4 text-secondary">No records found for this database view.</td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

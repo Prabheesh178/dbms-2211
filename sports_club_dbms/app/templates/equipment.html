@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+
+{% block title %}Equipment Inventory &bull; Sports Club DBMS{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="fw-bold mb-1">Equipment Issue & Inventory</h2>
+        <p class="text-secondary mb-0">Track sports gear checkouts, enforce return deadlines, and prevent issuing to members with overdue items.</p>
+    </div>
+    <button type="button" class="btn btn-primary-gradient px-3 py-2 rounded-3 shadow-sm" data-bs-toggle="modal" data-bs-target="#issueEquipmentModal">
+        <i class="bi bi-box-arrow-up-right me-1"></i> Issue Equipment
+    </button>
+</div>
+
+<!-- Filter Bar -->
+<div class="content-card p-3 mb-4">
+    <div class="d-flex gap-2">
+        <a href="{{ url_for('equipment_list') }}" class="btn btn-sm {% if not status_filter %}btn-dark{% else %}btn-outline-dark{% endif %}">
+            All Records
+        </a>
+        <a href="{{ url_for('equipment_list', status='Issued') }}" class="btn btn-sm {% if status_filter == 'Issued' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+            Currently Issued
+        </a>
+        <a href="{{ url_for('equipment_list', status='Overdue') }}" class="btn btn-sm {% if status_filter == 'Overdue' %}btn-danger{% else %}btn-outline-danger{% endif %}">
+            Overdue Items
+        </a>
+        <a href="{{ url_for('equipment_list', status='Returned') }}" class="btn btn-sm {% if status_filter == 'Returned' %}btn-success{% else %}btn-outline-success{% endif %}">
+            Returned History
+        </a>
+    </div>
+</div>
+
+<!-- Issues Table -->
+<div class="content-card">
+    <div class="card-header bg-white">
+        <span class="fw-bold"><i class="bi bi-box-seam text-primary me-2"></i>Borrowing Records</span>
+        <span class="small text-secondary">{{ issues|length }} Items</span>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-custom">
+            <thead>
+                <tr>
+                    <th>Issue #</th>
+                    <th>Borrower</th>
+                    <th>Equipment Name</th>
+                    <th>Qty</th>
+                    <th>Issue Date</th>
+                    <th>Due Date</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if issues %}
+                    {% for eq in issues %}
+                    <tr>
+                        <td class="font-monospace text-secondary">#{{ eq.issue_id }}</td>
+                        <td>
+                            <div class="fw-bold">{{ eq.member_name }}</div>
+                            <div class="text-secondary small">{{ eq.phone }}</div>
+                        </td>
+                        <td class="fw-semibold">{{ eq.equipment_name }}</td>
+                        <td><span class="badge bg-light text-dark border">{{ eq.quantity }}</span></td>
+                        <td>{{ eq.issue_date | format_date }}</td>
+                        <td>
+                            <div>{{ eq.due_date | format_date }}</div>
+                            {% if eq.status == 'Overdue' %}
+                                <span class="badge bg-danger-subtle text-danger border border-danger-subtle small">
+                                    {{ eq.days_overdue }} days overdue
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if eq.status == 'Returned' %}
+                                <span class="badge badge-completed px-2 py-1"><i class="bi bi-check2 me-1"></i>Returned</span>
+                                <div class="text-secondary small font-monospace">{{ eq.return_date | format_date }}</div>
+                            {% elif eq.status == 'Issued' %}
+                                <span class="badge badge-scheduled px-2 py-1"><i class="bi bi-clock me-1"></i>Issued</span>
+                            {% else %}
+                                <span class="badge badge-overdue px-2 py-1"><i class="bi bi-exclamation-octagon me-1"></i>Overdue</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if eq.status != 'Returned' %}
+                                <form method="POST" action="{{ url_for('equipment_return', issue_id=eq.issue_id) }}">
+                                    <button type="submit" class="btn btn-sm btn-outline-success">
+                                        <i class="bi bi-box-arrow-in-down me-1"></i> Return
+                                    </button>
+                                </form>
+                            {% else %}
+                                <span class="text-secondary small">&mdash;</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="8" class="text-center py-4 text-secondary">No equipment borrowing records found.</td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal: Issue Equipment -->
+<div class="modal fade" id="issueEquipmentModal" tabindex="-1" aria-labelledby="issueModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold" id="issueModalLabel">
+                    <i class="bi bi-box-arrow-up-right text-primary me-2"></i>Issue Equipment to Member
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" action="{{ url_for('equipment_issue') }}">
+                <div class="modal-body">
+                    <p class="text-secondary small mb-3">
+                        Enforces Trigger Rule 6: (1) Member must be active; (2) Hold at most 3 items unreturned; (3) Cannot be issued if member has ANY overdue gear.
+                    </p>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Borrower (Active Member) *</label>
+                        <select name="member_id" class="form-select" required>
+                            <option value="">-- Choose Member --</option>
+                            {% for m in active_members %}
+                            <option value="{{ m.member_id }}">{{ m.name }} (#{{ m.member_id }}) &mdash; {{ m.phone }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Equipment Item Name *</label>
+                        <input type="text" name="equipment_name" class="form-control" placeholder="e.g. Yonex Badminton Racket" required>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label fw-semibold">Quantity *</label>
+                            <input type="number" name="quantity" class="form-control" min="1" max="3" value="1" required>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label fw-semibold">Loan Duration (Days) *</label>
+                            <input type="number" name="due_days" class="form-control" min="1" max="30" value="7" required>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary-gradient px-4">Issue Gear</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

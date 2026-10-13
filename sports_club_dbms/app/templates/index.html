@@ -1,0 +1,195 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard &bull; Sports Club DBMS{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="fw-bold mb-1">Club Operations Dashboard</h2>
+        <p class="text-secondary mb-0">Live snapshot of memberships, tournament schedules, inventory, and finances.</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{{ url_for('members_list') }}" class="btn btn-primary-gradient px-3 py-2 rounded-3 shadow-sm">
+            <i class="bi bi-person-plus-fill me-1"></i> Register Member
+        </a>
+        <a href="{{ url_for('fixtures_list') }}" class="btn btn-outline-dark px-3 py-2 rounded-3">
+            <i class="bi bi-calendar-plus me-1"></i> Schedule Fixture
+        </a>
+    </div>
+</div>
+
+<!-- Stat Metric Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-xl-2 col-md-4 col-sm-6">
+        <div class="metric-card">
+            <div class="d-flex justify-content-between align-items-center">
+                <span class="label">Active Members</span>
+                <div class="icon-wrapper bg-primary-subtle text-primary">
+                    <i class="bi bi-people"></i>
+                </div>
+            </div>
+            <div class="value text-primary">{{ stats.active_members }}</div>
+            <span class="small text-success fw-semibold"><i class="bi bi-check-circle"></i> In Good Standing</span>
+        </div>
+    </div>
+    <div class="col-xl-2 col-md-4 col-sm-6">
+        <div class="metric-card">
+            <div class="d-flex justify-content-between align-items-center">
+                <span class="label">Squads & Teams</span>
+                <div class="icon-wrapper bg-info-subtle text-info">
+                    <i class="bi bi-shield"></i>
+                </div>
+            </div>
+            <div class="value text-dark">{{ stats.total_teams }}</div>
+            <span class="small text-secondary">Across 6 Sports</span>
+        </div>
+    </div>
+    <div class="col-xl-2 col-md-4 col-sm-6">
+        <div class="metric-card">
+            <div class="d-flex justify-content-between align-items-center">
+                <span class="label">Next Fixtures</span>
+                <div class="icon-wrapper bg-warning-subtle text-warning">
+                    <i class="bi bi-calendar-event"></i>
+                </div>
+            </div>
+            <div class="value text-dark">{{ stats.upcoming_fixtures }}</div>
+            <span class="small text-primary fw-semibold">Scheduled Matches</span>
+        </div>
+    </div>
+    <div class="col-xl-2 col-md-4 col-sm-6">
+        <div class="metric-card">
+            <div class="d-flex justify-content-between align-items-center">
+                <span class="label">Overdue Gear</span>
+                <div class="icon-wrapper bg-danger-subtle text-danger">
+                    <i class="bi bi-exclamation-octagon"></i>
+                </div>
+            </div>
+            <div class="value text-danger">{{ stats.overdue_equipment }}</div>
+            <span class="small text-danger fw-semibold">Action Required</span>
+        </div>
+    </div>
+    <div class="col-xl-2 col-md-4 col-sm-6">
+        <div class="metric-card">
+            <div class="d-flex justify-content-between align-items-center">
+                <span class="label">Total Revenue</span>
+                <div class="icon-wrapper bg-success-subtle text-success">
+                    <i class="bi bi-currency-rupee"></i>
+                </div>
+            </div>
+            <div class="value text-success">&#8377;{{ "{:,.0f}".format(stats.total_revenue) }}</div>
+            <span class="small text-secondary">Collected Fees</span>
+        </div>
+    </div>
+    <div class="col-xl-2 col-md-4 col-sm-6">
+        <div class="metric-card">
+            <div class="d-flex justify-content-between align-items-center">
+                <span class="label">Lapsed Subscriptions</span>
+                <div class="icon-wrapper bg-secondary-subtle text-secondary">
+                    <i class="bi bi-person-x"></i>
+                </div>
+            </div>
+            <div class="value text-secondary">{{ stats.pending_dues_count }}</div>
+            <span class="small text-danger fw-semibold">Expired Accounts</span>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Upcoming Fixtures Column -->
+    <div class="col-lg-7">
+        <div class="content-card">
+            <div class="card-header">
+                <span class="d-flex align-items-center gap-2">
+                    <i class="bi bi-trophy text-warning"></i>
+                    Upcoming Match Schedule
+                </span>
+                <a href="{{ url_for('fixtures_list') }}" class="btn btn-sm btn-outline-primary">View All Fixtures</a>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-custom">
+                    <thead>
+                        <tr>
+                            <th>Match</th>
+                            <th>Tournament</th>
+                            <th>Facility</th>
+                            <th>Date & Time</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if upcoming_fixtures %}
+                            {% for fx in upcoming_fixtures %}
+                            <tr>
+                                <td>
+                                    <div class="fw-bold">{{ fx.team1 }}</div>
+                                    <div class="text-secondary small">vs {{ fx.team2 }}</div>
+                                </td>
+                                <td><span class="badge bg-light text-dark border">{{ fx.tournament_name }}</span></td>
+                                <td><i class="bi bi-geo-alt text-secondary me-1"></i>{{ fx.facility_name }}</td>
+                                <td>
+                                    <div class="fw-semibold">{{ fx.fixture_date | format_date }}</div>
+                                    <div class="text-secondary small">{{ fx.start_time }}</div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="4" class="text-center py-4 text-secondary">No upcoming scheduled matches found.</td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Overdue Equipment Column -->
+    <div class="col-lg-5">
+        <div class="content-card">
+            <div class="card-header">
+                <span class="d-flex align-items-center gap-2">
+                    <i class="bi bi-box-seam text-danger"></i>
+                    Overdue Equipment Checkouts
+                </span>
+                <a href="{{ url_for('equipment_list', status='Overdue') }}" class="btn btn-sm btn-outline-danger">Manage All</a>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-custom">
+                    <thead>
+                        <tr>
+                            <th>Member</th>
+                            <th>Item & Qty</th>
+                            <th>Overdue By</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if overdue_gear %}
+                            {% for gear in overdue_gear %}
+                            <tr>
+                                <td>
+                                    <div class="fw-semibold">{{ gear.member_name }}</div>
+                                    <div class="text-secondary small">{{ gear.phone }}</div>
+                                </td>
+                                <td>
+                                    <div>{{ gear.equipment_name }}</div>
+                                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle">Qty: {{ gear.quantity }}</span>
+                                </td>
+                                <td>
+                                    <span class="text-danger fw-bold">{{ gear.days_overdue }} days</span>
+                                    <div class="text-secondary small">Due: {{ gear.due_date | format_date }}</div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="3" class="text-center py-4 text-success">
+                                    <i class="bi bi-check2-all me-1"></i> No equipment is currently overdue!
+                                </td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,169 @@
+{% extends "base.html" %}
+
+{% block title %}Memberships &bull; Sports Club DBMS{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="fw-bold mb-1">Club Memberships</h2>
+        <p class="text-secondary mb-0">Manage patron registrations, subscriptions, renewals, and profile status.</p>
+    </div>
+    <button type="button" class="btn btn-primary-gradient px-3 py-2 rounded-3 shadow-sm" data-bs-toggle="modal" data-bs-target="#registerMemberModal">
+        <i class="bi bi-person-plus-fill me-1"></i> Register New Member
+    </button>
+</div>
+
+<!-- Search & Filter Controls -->
+<div class="content-card p-3 mb-4">
+    <form method="GET" action="{{ url_for('members_list') }}" class="row g-2 align-items-center">
+        <div class="col-md-5">
+            <div class="input-group">
+                <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-secondary"></i></span>
+                <input type="text" name="search" class="form-control border-start-0" placeholder="Search by name, email, or phone..." value="{{ search }}">
+            </div>
+        </div>
+        <div class="col-md-3">
+            <select name="status" class="form-select">
+                <option value="">All Membership Statuses</option>
+                <option value="Active" {% if status_filter == 'Active' %}selected{% endif %}>Active</option>
+                <option value="Expired" {% if status_filter == 'Expired' %}selected{% endif %}>Expired</option>
+                <option value="Suspended" {% if status_filter == 'Suspended' %}selected{% endif %}>Suspended</option>
+            </select>
+        </div>
+        <div class="col-md-3">
+            <select name="plan_id" class="form-select">
+                <option value="">All Membership Plans</option>
+                {% for p in plans %}
+                <option value="{{ p.plan_id }}" {% if plan_filter == p.plan_id|string %}selected{% endif %}>{{ p.plan_name }} (&#8377;{{ p.fee }})</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-1 d-grid">
+            <button type="submit" class="btn btn-dark">Filter</button>
+        </div>
+    </form>
+</div>
+
+<!-- Members Table -->
+<div class="content-card">
+    <div class="table-responsive">
+        <table class="table table-custom">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Member Details</th>
+                    <th>Contact</th>
+                    <th>Subscribed Plan</th>
+                    <th>Valid Period</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if members %}
+                    {% for m in members %}
+                    <tr>
+                        <td class="font-monospace text-secondary">#{{ m.member_id }}</td>
+                        <td>
+                            <div class="fw-bold">{{ m.name }}</div>
+                            <div class="text-secondary small">DOB: {{ m.dob | format_date }}</div>
+                        </td>
+                        <td>
+                            <div><i class="bi bi-telephone text-secondary me-1"></i>{{ m.phone }}</div>
+                            <div class="small text-secondary"><i class="bi bi-envelope text-secondary me-1"></i>{{ m.email }}</div>
+                        </td>
+                        <td>
+                            <span class="badge bg-light text-dark border">{{ m.plan_name }}</span>
+                            <div class="small text-secondary">&#8377;{{ "{:,.2f}".format(m.fee) }}</div>
+                        </td>
+                        <td>
+                            <div class="small">{{ m.membership_start | format_date }} &rarr; {{ m.membership_end | format_date }}</div>
+                        </td>
+                        <td>
+                            {% if m.status == 'Active' %}
+                                <span class="badge badge-active px-2 py-1"><i class="bi bi-check-circle me-1"></i>Active</span>
+                            {% elif m.status == 'Expired' %}
+                                <span class="badge badge-expired px-2 py-1"><i class="bi bi-clock-history me-1"></i>Expired</span>
+                            {% else %}
+                                <span class="badge badge-suspended px-2 py-1"><i class="bi bi-pause-circle me-1"></i>Suspended</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="{{ url_for('member_renew', member_id=m.member_id) }}" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-arrow-repeat me-1"></i> Renew
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="7" class="text-center py-4 text-secondary">No members found matching the specified criteria.</td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal: Register New Member (Invokes sp_register_member_with_payment) -->
+<div class="modal fade" id="registerMemberModal" tabindex="-1" aria-labelledby="registerModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold" id="registerModalLabel">
+                    <i class="bi bi-person-plus-fill text-primary me-2"></i>Register New Club Member
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" action="{{ url_for('member_register') }}">
+                <div class="modal-body">
+                    <p class="text-secondary small mb-3">
+                        Atomically registers the member profile and logs initial subscription payment via Stored Procedure <code>sp_register_member_with_payment</code>.
+                    </p>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Full Name *</label>
+                        <input type="text" name="name" class="form-control" placeholder="e.g. Rohini Sen" required>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Phone Number *</label>
+                            <input type="text" name="phone" class="form-control" placeholder="+91 98123 45678" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Email Address *</label>
+                            <input type="email" name="email" class="form-control" placeholder="user@example.in" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Date of Birth *</label>
+                        <input type="date" name="dob" class="form-control" required>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Select Plan *</label>
+                            <select name="plan_id" class="form-select" required>
+                                {% for p in plans %}
+                                <option value="{{ p.plan_id }}">{{ p.plan_name }} (&#8377;{{ p.fee }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Payment Mode *</label>
+                            <select name="mode" class="form-select" required>
+                                <option value="UPI">UPI (GooglePay/PhonePe)</option>
+                                <option value="Card">Credit/Debit Card</option>
+                                <option value="Cash">Cash at Counter</option>
+                                <option value="Bank">Bank Transfer / NEFT</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary-gradient px-4">Register & Pay</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

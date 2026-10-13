@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+
+{% block title %}Training Sessions &bull; Sports Club DBMS{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="fw-bold mb-1">Training Sessions</h2>
+        <p class="text-secondary mb-0">Schedule practice drills, manage coaching sessions, and enforce venue & team non-overlap constraints.</p>
+    </div>
+    <button type="button" class="btn btn-primary-gradient px-3 py-2 rounded-3 shadow-sm" data-bs-toggle="modal" data-bs-target="#scheduleSessionModal">
+        <i class="bi bi-clock-history me-1"></i> Schedule Session
+    </button>
+</div>
+
+<!-- Sessions Table -->
+<div class="content-card">
+    <div class="card-header bg-white">
+        <span class="fw-bold"><i class="bi bi-stopwatch text-primary me-2"></i>Scheduled Practice Drills</span>
+        <span class="small text-secondary">{{ sessions|length }} Total Sessions</span>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-custom">
+            <thead>
+                <tr>
+                    <th>Date & Time</th>
+                    <th>Team & Sport</th>
+                    <th>Coach</th>
+                    <th>Facility Venue</th>
+                    <th>Max Attendees</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if sessions %}
+                    {% for s in sessions %}
+                    <tr>
+                        <td>
+                            <div class="fw-bold">{{ s.session_date | format_date }}</div>
+                            <div class="text-secondary small font-monospace">{{ s.start_time }} &mdash; {{ s.end_time }}</div>
+                        </td>
+                        <td>
+                            <div class="fw-bold">{{ s.team_name }}</div>
+                            <span class="badge bg-light text-dark border">{{ s.sport_name }}</span>
+                        </td>
+                        <td>
+                            <div class="fw-semibold"><i class="bi bi-person-badge text-secondary me-1"></i>{{ s.coach_name }}</div>
+                        </td>
+                        <td>
+                            <div><i class="bi bi-geo-alt text-primary me-1"></i>{{ s.facility_name }}</div>
+                        </td>
+                        <td>
+                            <span class="badge bg-secondary-subtle text-dark border">{{ s.max_attendees }} players</span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="5" class="text-center py-4 text-secondary">No practice sessions found.</td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal: Schedule New Session -->
+<div class="modal fade" id="scheduleSessionModal" tabindex="-1" aria-labelledby="scheduleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold" id="scheduleModalLabel">
+                    <i class="bi bi-calendar-plus text-primary me-2"></i>Schedule Training Session
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" action="{{ url_for('training_schedule') }}">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Team *</label>
+                        <select name="team_id" class="form-select" required>
+                            <option value="">-- Choose Team --</option>
+                            {% for t in teams %}
+                            <option value="{{ t.team_id }}">{{ t.team_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Coach *</label>
+                        <select name="coach_id" class="form-select" required>
+                            <option value="">-- Choose Coach --</option>
+                            {% for c in coaches %}
+                            <option value="{{ c.coach_id }}">{{ c.name }}</option>
+                            {% endfor %}
+                        </select>
+                        <div class="form-text small">Coach sport must match team sport (Rule 8).</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Facility Venue *</label>
+                        <select name="facility_id" class="form-select" required>
+                            <option value="">-- Choose Facility --</option>
+                            {% for f in facilities %}
+                            <option value="{{ f.facility_id }}" {% if f.status != 'Available' %}disabled{% endif %}>
+                                {{ f.facility_name }} (Capacity: {{ f.capacity }}) {% if f.status != 'Available' %}[{{ f.status }}]{% endif %}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Session Date *</label>
+                        <input type="date" name="session_date" class="form-control" required>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label fw-semibold">Start Time *</label>
+                            <input type="time" name="start_time" class="form-control" required>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label fw-semibold">End Time *</label>
+                            <input type="time" name="end_time" class="form-control" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Max Attendees *</label>
+                        <input type="number" name="max_attendees" class="form-control" min="1" max="50" value="15" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary-gradient px-4">Book Session</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

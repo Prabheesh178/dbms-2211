@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+
+{% block title %}Teams & Squads &bull; Sports Club DBMS{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="fw-bold mb-1">Teams & Athletic Squads</h2>
+        <p class="text-secondary mb-0">Club team rosters, sport affiliations, coach assignments, and squad capacity limits.</p>
+    </div>
+    <button type="button" class="btn btn-primary-gradient px-3 py-2 rounded-3 shadow-sm" data-bs-toggle="modal" data-bs-target="#createTeamModal">
+        <i class="bi bi-plus-circle-fill me-1"></i> Form New Team
+    </button>
+</div>
+
+<!-- Teams Cards Grid -->
+<div class="row g-4">
+    {% for t in teams %}
+    <div class="col-lg-4 col-md-6">
+        <div class="content-card h-100">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <span class="badge bg-primary-subtle text-primary border border-primary-subtle">{{ t.sport_name }}</span>
+                <span class="text-secondary small font-monospace">Formed {{ t.formed_on | format_date }}</span>
+            </div>
+            <div class="p-4 d-flex flex-column justify-content-between h-100">
+                <div>
+                    <h4 class="fw-bold text-dark mb-2">{{ t.team_name }}</h4>
+                    <div class="text-secondary small mb-3">
+                        <i class="bi bi-person-badge text-primary me-1"></i>
+                        Head Coach: <strong>{{ t.coach_name or 'Unassigned' }}</strong>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between small mb-1">
+                            <span>Roster Capacity</span>
+                            <strong>{{ t.current_members }} / {{ t.max_team_size }} Players</strong>
+                        </div>
+                        <div class="progress" style="height: 8px;">
+                            {% set pct = (t.current_members / t.max_team_size * 100) | round %}
+                            <div class="progress-bar {% if pct >= 100 %}bg-danger{% elif pct >= 75 %}bg-warning{% else %}bg-success{% endif %}"
+                                 role="progressbar" style="width: {{ pct }}%"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-3 pt-3 border-top d-flex justify-content-between align-items-center">
+                    <span class="small text-secondary">
+                        <i class="bi bi-people me-1"></i>{{ t.current_members }} active members
+                    </span>
+                    <a href="{{ url_for('team_detail', team_id=t.team_id) }}" class="btn btn-sm btn-outline-dark">
+                        Manage Roster <i class="bi bi-arrow-right ms-1"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Modal: Form New Team -->
+<div class="modal fade" id="createTeamModal" tabindex="-1" aria-labelledby="createTeamModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold" id="createTeamModalLabel">
+                    <i class="bi bi-shield-plus text-primary me-2"></i>Form New Team
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" action="{{ url_for('team_create') }}">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Team Name *</label>
+                        <input type="text" name="team_name" class="form-control" placeholder="e.g. Pune Panthers" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Sport *</label>
+                        <select name="sport_id" class="form-select" required>
+                            <option value="">-- Choose Sport --</option>
+                            {% for s in sports %}
+                            <option value="{{ s.sport_id }}">{{ s.sport_name }} (Max squad: {{ s.max_team_size }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Assign Coach (Optional)</label>
+                        <select name="coach_id" class="form-select">
+                            <option value="">-- Unassigned --</option>
+                            {% for c in coaches %}
+                            <option value="{{ c.coach_id }}">{{ c.name }} &mdash; Specialization: {{ c.sport_name }}</option>
+                            {% endfor %}
+                        </select>
+                        <div class="form-text small">Trigger Rule 8 strictly verifies coach sport matches team sport!</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary-gradient px-4">Create Team</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

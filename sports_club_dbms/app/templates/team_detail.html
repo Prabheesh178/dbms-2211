@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+
+{% block title %}{{ team.team_name }} Roster &bull; Sports Club DBMS{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <div class="d-flex align-items-center gap-2 mb-1">
+            <a href="{{ url_for('teams_list') }}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-left"></i> Teams</a>
+            <h2 class="fw-bold mb-0">{{ team.team_name }}</h2>
+            <span class="badge bg-primary-subtle text-primary border border-primary-subtle">{{ team.sport_name }}</span>
+        </div>
+        <p class="text-secondary mb-0">
+            Coach: <strong>{{ team.coach_name or 'None' }}</strong> ({{ team.coach_phone or 'N/A' }}) &bull;
+            Formed on {{ team.formed_on | format_date }} &bull; Max Roster Size: {{ team.max_team_size }}
+        </p>
+    </div>
+    <div>
+        <span class="badge {% if roster|length >= team.max_team_size %}bg-danger{% else %}bg-success{% endif %} fs-6 px-3 py-2">
+            Roster: {{ roster|length }} / {{ team.max_team_size }}
+        </span>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Active Roster Column -->
+    <div class="col-lg-8">
+        <div class="content-card">
+            <div class="card-header bg-white">
+                <span class="fw-bold"><i class="bi bi-person-lines-fill text-primary me-2"></i>Official Team Roster</span>
+                <span class="small text-secondary">{{ roster|length }} Registered Athletes</span>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-custom">
+                    <thead>
+                        <tr>
+                            <th>Member</th>
+                            <th>Role / Position</th>
+                            <th>Contact</th>
+                            <th>Joined Date</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if roster %}
+                            {% for player in roster %}
+                            <tr>
+                                <td>
+                                    <div class="fw-bold">{{ player.name }}</div>
+                                    <div class="text-secondary small font-monospace">#{{ player.member_id }}</div>
+                                </td>
+                                <td><span class="badge bg-light text-dark border">{{ player.role }}</span></td>
+                                <td>
+                                    <div><i class="bi bi-telephone text-secondary me-1"></i>{{ player.phone }}</div>
+                                    <div class="small text-secondary">{{ player.email }}</div>
+                                </td>
+                                <td>{{ player.joined_on | format_date }}</td>
+                                <td>
+                                    <form method="POST" action="{{ url_for('team_remove_member', team_id=team.team_id, member_id=player.member_id) }}" onsubmit="return confirm('Remove {{ player.name }} from this squad roster?');">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger">
+                                            <i class="bi bi-person-dash"></i> Remove
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="5" class="text-center py-4 text-secondary">No players enrolled in this squad yet.</td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Member to Roster Column -->
+    <div class="col-lg-4">
+        <div class="content-card">
+            <div class="card-header bg-white">
+                <span class="fw-bold"><i class="bi bi-person-plus text-success me-2"></i>Enroll Active Member</span>
+            </div>
+            <div class="p-3">
+                <p class="text-secondary small mb-3">
+                    Trigger Rules strictly enforce: (1) Member must be <code>Active</code> with unexpired validity; (2) Total team roster must not exceed sport maximum size ({{ team.max_team_size }}).
+                </p>
+                <form method="POST" action="{{ url_for('team_add_member', team_id=team.team_id) }}">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Select Club Member *</label>
+                        <select name="member_id" class="form-select" required>
+                            <option value="">-- Choose Member --</option>
+                            {% for m in available_members %}
+                            <option value="{{ m.member_id }}">{{ m.name }} (#{{ m.member_id }}) - {{ m.phone }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Role / Position</label>
+                        <input type="text" name="role" class="form-control" placeholder="e.g. Batsman, Goalkeeper, Starter" value="Player">
+                    </div>
+                    <button type="submit" class="btn btn-primary-gradient w-100 py-2">
+                        <i class="bi bi-plus-circle me-1"></i> Add to Team
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

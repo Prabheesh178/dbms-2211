@@ -1,0 +1,27 @@
+# Local MySQL instance and data files
+mysql_instance/
+*.ibd
+*.frm
+*.pid
+*.err
+
+# Temporary browser profiles and cache
+temp_edge_profile/
+temp_profile/
+
+# Environment and secrets
+.env
+*.env.local
+
+# Python artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.coverage
+htmlcov/
+*.log
+
+# System files
+Thumbs.db
+.DS_Store

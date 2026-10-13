@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block title %}Renew Membership &bull; Sports Club DBMS{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-6 col-md-8">
+        <div class="content-card shadow-sm">
+            <div class="card-header bg-white">
+                <span class="d-flex align-items-center gap-2">
+                    <i class="bi bi-arrow-repeat text-primary fs-5"></i>
+                    Renew Membership Package
+                </span>
+                <a href="{{ url_for('members_list') }}" class="btn btn-sm btn-outline-secondary">Back to Members</a>
+            </div>
+            <div class="p-4">
+                <div class="bg-light p-3 rounded-3 mb-4 border">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="fw-bold mb-1">{{ member.name }}</h5>
+                            <div class="text-secondary small">{{ member.phone }} &bull; {{ member.email }}</div>
+                        </div>
+                        <div>
+                            {% if member.status == 'Active' %}
+                                <span class="badge badge-active px-2 py-1">Active</span>
+                            {% else %}
+                                <span class="badge badge-expired px-2 py-1">{{ member.status }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <hr class="my-2">
+                    <div class="row g-2 small text-secondary">
+                        <div class="col-6">Current Plan: <strong class="text-dark">{{ member.plan_name }}</strong></div>
+                        <div class="col-6 text-end">Expires On: <strong class="text-dark">{{ member.membership_end | format_date }}</strong></div>
+                    </div>
+                </div>
+
+                <form method="POST" action="{{ url_for('member_renew', member_id=member.member_id) }}">
+                    <p class="text-secondary small mb-3">
+                        Calls stored procedure <code>sp_renew_membership</code> to recalculate extension dates and record a renewal transaction.
+                    </p>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Select Renewal Plan *</label>
+                        <select name="plan_id" class="form-select form-select-lg" required>
+                            {% for p in plans %}
+                            <option value="{{ p.plan_id }}" {% if p.plan_id == member.plan_id %}selected{% endif %}>
+                                {{ p.plan_name }} ({{ p.duration_months }} Months) &mdash; &#8377;{{ "{:,.2f}".format(p.fee) }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold">Payment Mode *</label>
+                        <select name="mode" class="form-select" required>
+                            <option value="UPI">UPI (GooglePay / PhonePe / Paytm)</option>
+                            <option value="Card">Debit / Credit Card</option>
+                            <option value="Cash">Cash at Reception</option>
+                            <option value="Bank">Direct Bank Transfer</option>
+                        </select>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary-gradient py-2 fw-semibold fs-6">
+                            <i class="bi bi-check2-circle me-1"></i> Confirm Renewal & Process Fee
+                        </button>
+                        <a href="{{ url_for('members_list') }}" class="btn btn-light py-2">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
